@@ -4,12 +4,21 @@ const Product = require("./Product");
 const Schema = mongoose.Schema;
 const cartSchema = Schema(
   {
-    productId: { type: mongoose.ObjectId, ref: User },
+    userId: { type: mongoose.ObjectId, ref: "User", required: true },
     items: [
       {
-        productId: { type: mongoose.ObjectId, ref: Product },
-        size: { type: String, required: true },
-        qty: { type: Number, default: 1, required: true },
+        productId: { type: mongoose.ObjectId, ref: "Product", required: true },
+        size: {
+          type: String,
+          required: true,
+          enum: ["XS", "S", "M", "L", "XL"],
+        },
+        qty: {
+          type: Number,
+          default: 1,
+          required: true,
+          min: [1, "수량은 1개 이상이어야 합니다."],
+        },
       },
     ],
   },

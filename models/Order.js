@@ -15,13 +15,30 @@ const orderSchema = Schema(
       email: { type: String, required: true },
     },
     totalPrice: { type: Number, required: true, default: 0 },
-    status: { type: String, default: "preparing" },
+    status: {
+      type: String,
+      default: "preparing",
+      enum: ["preparing", "shipping", "delivered", "cancelled"],
+    },
     items: [
       {
         productId: { type: mongoose.ObjectId, ref: "Product", required: true },
-        price: { type: Number, required: true },
-        qty: { type: Number, required: true, default: 1 },
-        size: { type: String, required: true },
+        price: {
+          type: Number,
+          required: true,
+          min: [0, "가격은 0보다 커야 합니다."],
+        },
+        qty: {
+          type: Number,
+          required: true,
+          default: 1,
+          min: [1, "수량은 1개 이상이어야 합니다."],
+        },
+        size: {
+          type: String,
+          required: true,
+          enum: ["XS", "S", "M", "L", "XL"],
+        },
       },
     ],
   },

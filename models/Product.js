@@ -9,13 +9,17 @@ const productSchema = Schema(
     description: { type: String, required: true },
     price: { type: Number, required: true },
     stock: { type: Object, required: true },
-    status: { type: String, default: "active" },
+    status: {
+      type: String,
+      default: "active",
+      enum: ["active", "inactive", "sold-out"],
+    },
     isDeleted: { type: Boolean, default: false },
   },
   { timestamps: true }
 );
 
-ProductSchema.methods.toJSON = function () {
+productSchema.methods.toJSON = function () {
   const obj = this._doc;
   delete obj.__v;
   delete obj.updatedAt;
