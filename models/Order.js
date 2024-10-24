@@ -5,8 +5,15 @@ const Schema = mongoose.Schema;
 const orderSchema = Schema(
   {
     userId: { type: mongoose.ObjectId, ref: "User", required: true },
-    shipTo: { type: Object, required: true },
-    contact: { type: Object, required: true },
+    shipTo: {
+      address: { type: String, required: true },
+      city: { type: String, required: true },
+      postalCode: { type: String, required: true },
+    },
+    contact: {
+      phone: { type: String, required: true },
+      email: { type: String, required: true },
+    },
     totalPrice: { type: Number, required: true, default: 0 },
     status: { type: String, default: "preparing" },
     items: [
