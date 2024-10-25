@@ -8,7 +8,6 @@ userController.createUser = async (req, res) => {
   try {
     let { email, password, name, level } = req.body;
     const user = await User.findOne({ email });
-    
     if (user) {
       throw new Error("User already exist.");
     }
