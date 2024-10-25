@@ -6,22 +6,31 @@ const userController = {};
 userController.createUser = async (req, res) => {
   try {
     let { email, password, name, level } = req.body;
-    const user = await User.findOne({ email });
-    if (user) {
-      throw new Error("User already exist.");
+
+    // 이메일로 사용자 중복 확인
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return res
+        .status(400)
+        .json({ status: "fail", error: "User already exists." });
     }
-    const salt = await bcrypt.genSaltSync(10);
-    password = await bcrypt.hash(password, salt);
+
+    // 비밀번호 해싱
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    // 새로운 사용자 생성
     const newUser = new User({
       email,
-      password,
+      password: hashedPassword,
       name,
       level: level ? level : "customer",
     });
     await newUser.save();
-    return res.status(200).json({ status: "success" });
+
+    return res.status(201).json({ status: "success" });
   } catch (error) {
-    res.status(400).json({ status: "fail", error: error.message });
+    res.status(500).json({ status: "fail", error: error.message });
   }
 };
 
