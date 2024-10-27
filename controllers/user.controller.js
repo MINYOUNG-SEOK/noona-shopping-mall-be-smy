@@ -32,9 +32,9 @@ userController.checkEmail = async (req, res) => {
   const { email } = req.body;
   const user = await User.findOne({ email });
   if (user) {
-    return res.status(409).json({ message: "이미 가입된 유저입니다." }); // Conflict
+    return res.status(409).json({ message: "이미 가입된 유저입니다." });
   }
-  return res.status(200).json({ message: "이메일 사용 가능." }); // OK
+  return res.status(200).json({ message: "이메일 사용 가능." });
 };
 
 userController.loginWithEmail = async (req, res) => {
