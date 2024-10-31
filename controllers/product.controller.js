@@ -1,6 +1,7 @@
 const Product = require("../models/Product");
 
 const productController = {};
+
 productController.createProduct = async (req, res) => {
   try {
     const {
@@ -35,9 +36,19 @@ productController.createProduct = async (req, res) => {
 
 productController.getProduct = async (req, res) => {
   try {
-    const product = await Product.find({});
-    res.status(200).json({ status: "success", data: product });
+    const { name } = req.query;
+
+    const cond = name ? { name: { $regex: name, $options: "i" } } : {};
+
+    const productList = await Product.find(cond);
+
+    res.status(200).json({
+      status: "success",
+      data: productList,
+      totalPageNum: 1, 
+    });
   } catch (error) {
+    console.error("Error fetching products:", error.message);
     res.status(400).json({ status: "fail", error: error.message });
   }
 };
