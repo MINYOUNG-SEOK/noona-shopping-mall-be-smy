@@ -1,3 +1,4 @@
+const { response } = require("express");
 const Product = require("../models/Product");
 
 const PAGE_SIZE = 5;
@@ -47,12 +48,11 @@ productController.getProduct = async (req, res) => {
       const totalItemNum = await Product.find(cond).countDocuments();
       // 데이터 총 개수 / PAGE_SIZE
       const totalPageNum = Math.ceil(totalItemNum / PAGE_SIZE);
+      response.totalPageNum = totalPageNum;
     }
     const productList = await query.exec();
-    res.status(200).json({
-      status: "success",
-      data: productList,
-    });
+    response.data = productList;
+    res.status(200).json(response);
   } catch (error) {
     res.status(400).json({ status: "fail", error: error.message });
   }
