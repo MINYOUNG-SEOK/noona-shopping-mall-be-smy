@@ -40,7 +40,7 @@ productController.getProduct = async (req, res) => {
     const { page, name } = req.query;
     const cond = name ? { name: { $regex: name, $options: "i" } } : {};
 
-    let query = Product.find(cond);
+    let query = Product.find(cond).sort({ createdAt: -1 });
     const totalItemNum = await Product.find(cond).countDocuments();
 
     if (page) {
