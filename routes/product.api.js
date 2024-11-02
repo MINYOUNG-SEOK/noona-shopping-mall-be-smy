@@ -30,4 +30,7 @@ router.patch(
   productController.softDeleteProduct
 );
 
+// 상품 상세 조회
+router.get("/:id", productController.getProductDetail);
+
 module.exports = router;

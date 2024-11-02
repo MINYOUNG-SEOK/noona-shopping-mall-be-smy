@@ -110,4 +110,22 @@ productController.softDeleteProduct = async (req, res) => {
     res.status(400).json({ status: "fail", error: error.message });
   }
 };
+
+productController.getProductDetail = async (req, res) => {
+  try {
+    const productId = req.params.id;
+    const product = await Product.findOne({ _id: productId, isDeleted: false });
+
+    if (!product) {
+      return res
+        .status(404)
+        .json({ status: "fail", message: "Product not found" });
+    }
+
+    res.status(200).json({ status: "success", data: product });
+  } catch (error) {
+    res.status(400).json({ status: "fail", error: error.message });
+  }
+};
+
 module.exports = productController;
