@@ -81,14 +81,18 @@ productController.updateProduct = async (req, res) => {
       status,
     } = req.body;
 
+   
     const product = await Product.findByIdAndUpdate(
       { _id: productId },
       { sku, name, size, image, price, description, category, stock, status },
       { new: true }
     );
+
+
     if (!product) throw new Error("Item doesn't exist");
     res.status(200).json({ status: "success", data: product });
   } catch (error) {
+
     res.status(400).json({ status: "fail", error: error.message });
   }
 };
