@@ -1,6 +1,7 @@
 const Cart = require("../models/Cart");
 const cartController = {};
 
+// 장바구니 추가
 cartController.addToCart = async (req, res) => {
   try {
     const { userId } = req;
@@ -38,6 +39,7 @@ cartController.addToCart = async (req, res) => {
   }
 };
 
+// 장바구니 리스트 가져오기
 cartController.getCart = async (req, res) => {
   try {
     const { userId } = req;
@@ -57,6 +59,72 @@ cartController.getCart = async (req, res) => {
     });
   } catch (error) {
     res.status(400).json({ status: "fail", error: error.message });
+  }
+};
+
+// 장바구니 아이템 삭제
+cartController.deleteCartItem = async (req, res) => {
+  try {
+    const { userId } = req;
+    const itemId = req.params.id;
+
+    // 해당 유저의 카트 찾기
+    const cart = await Cart.findOne({ userId });
+    if (!cart) {
+      throw new Error("장바구니를 찾을 수 없습니다.");
+    }
+
+    // items 배열에서 해당 아이템 제거
+    cart.items = cart.items.filter((item) => !item._id.equals(itemId));
+    await cart.save();
+
+    res.status(200).json({
+      status: "success",
+      message: "상품이 삭제되었습니다.",
+    });
+  } catch (error) {
+    res.status(400).json({
+      status: "fail",
+      error: error.message,
+    });
+  }
+};
+
+// 장바구니 수량 업데이트
+cartController.updateQty = async (req, res) => {
+  try {
+    const { userId } = req;
+    const itemId = req.params.id;
+    const { qty } = req.body;
+
+    if (qty < 1) {
+      throw new Error("수량은 1개 이상이어야 합니다.");
+    }
+
+    // 해당 유저의 카트 찾기
+    const cart = await Cart.findOne({ userId });
+    if (!cart) {
+      throw new Error("장바구니를 찾을 수 없습니다.");
+    }
+
+    // 해당 아이템 찾아서 수량 업데이트
+    const cartItem = cart.items.find((item) => item._id.equals(itemId));
+    if (!cartItem) {
+      throw new Error("상품을 찾을 수 없습니다.");
+    }
+
+    cartItem.qty = qty;
+    await cart.save();
+
+    res.status(200).json({
+      status: "success",
+      data: cart,
+    });
+  } catch (error) {
+    res.status(400).json({
+      status: "fail",
+      error: error.message,
+    });
   }
 };
 
