@@ -38,7 +38,8 @@ productController.createProduct = async (req, res) => {
 productController.getProduct = async (req, res) => {
   try {
     const { page, name } = req.query;
-    const cond = name ? { name: { $regex: name, $options: "i" } } : {};
+    const cond = { isDeleted: false }; // 삭제된 상품 제외
+    if (name) cond.name = { $regex: name, $options: "i" };
 
     let query = Product.find(cond).sort({ createdAt: -1 });
     const totalItemNum = await Product.find(cond).countDocuments();
@@ -92,4 +93,21 @@ productController.updateProduct = async (req, res) => {
   }
 };
 
+productController.softDeleteProduct = async (req, res) => {
+  try {
+    const productId = req.params.id;
+    const product = await Product.findByIdAndUpdate(
+      productId,
+      { isDeleted: true },
+      { new: true }
+    );
+    if (!product) throw new Error("Product not found");
+
+    res
+      .status(200)
+      .json({ status: "success", message: "Product deleted successful" });
+  } catch (error) {
+    res.status(400).json({ status: "fail", error: error.message });
+  }
+};
 module.exports = productController;
