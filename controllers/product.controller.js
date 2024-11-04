@@ -142,7 +142,7 @@ productController.checkStock = async (item) => {
   }
   // 충분하다면 재고에서 qty 빼고 성공 결과 보내기
   const newStock = { ...product.stock };
-  newStock[(item, size)] -= item.qty;
+  newStock[item.size] -= item.qty;
   product.stock = newStock;
 
   await product.save();
