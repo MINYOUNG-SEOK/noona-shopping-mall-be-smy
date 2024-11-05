@@ -1,6 +1,7 @@
 const mongoose = require("mongoose");
 const User = require("./User");
 const Product = require("./Product");
+const Cart = require("./Cart");
 const Schema = mongoose.Schema;
 
 const orderSchema = Schema(
@@ -43,10 +44,39 @@ const orderSchema = Schema(
         },
       },
     ],
-    deliveryMessage: { type: String }, // 추가
+    deliveryMessage: { type: String },
   },
   { timestamps: true }
 );
+
+orderSchema.methods.toJSON = function () {
+  const obj = this._doc;
+  delete obj.__v;
+  delete obj.updatedAt;
+  return obj;
+};
+
+orderSchema.post("save", async function () {
+  // 카트를 비워주자
+  const cart = await Cart.findOne({ userId: this.userId });
+  if (!cart) return;
+
+  // 주문한 상품의 productId와 size 목록 생성
+  const orderedItems = this.items.map((item) => ({
+    productId: item.productId.toString(),
+    size: item.size,
+  }));
+
+  // 장바구니에서 주문한 상품만 제거
+  cart.items = cart.items.filter((cartItem) => {
+    return !orderedItems.some(
+      (orderedItems) =>
+        orderedItems.productId === cartItem.productId.toString() &&
+        orderedItems.size === cartItem.size
+    );
+  });
+  await cart.save();
+});
 
 const Order = mongoose.model("Order", orderSchema);
 module.exports = Order;

@@ -1,5 +1,6 @@
 const orderController = {};
 const Order = require("../models/Order.js");
+const Cart = require("../models/Cart.js");
 const { randomStringGenerator } = require("../utils/randomStringGenerator.js");
 const productController = require("./product.controller");
 
@@ -32,7 +33,17 @@ orderController.createOrder = async (req, res) => {
     });
 
     await newOrder.save();
-    res.status(200).json({ status: "success", orderNum: newOrder.orderNum });
+
+    // 주문 후 장바구니 개수 가지고 오기
+    const cart = await Cart.findOne({ userId });
+    const remainingCartCount = cart ? cart.items.length : 0;
+
+    console.log(200);
+    res.status(200).json({
+      status: "success",
+      orderNum: newOrder.orderNum,
+      cartItemCount: remainingCartCount,
+    });
   } catch (error) {
     return res.status(400).json({ status: "fail", error: error.message });
   }
