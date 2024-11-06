@@ -1,20 +1,19 @@
-const orderController = {};
 const Order = require("../models/Order.js");
 const Cart = require("../models/Cart.js");
 const { randomStringGenerator } = require("../utils/randomStringGenerator.js");
 const productController = require("./product.controller");
 
+const orderController = {};
+
 orderController.createOrder = async (req, res) => {
   try {
-    // 프론트엔드에서 데이터 보낸거 받아오기 userId, totalPrice, shipTo, contact,orderList
     const { userId } = req;
     const { shipTo, contact, totalPrice, orderList } = req.body;
-    // 재고 확인 & 재고 업데이트
-    const insufficientStockItems = await productController.checkItemListStock(
-      orderList
-    );
 
-    // 재고가 충분하지 않은 아이템이 있다 => 에러
+    // 1. 먼저 모든 상품의 재고를 확인
+    const insufficientStockItems = await productController.checkItemListStock(orderList);
+
+    // 2. 재고가 부족한 상품이 있으면 에러 발생 (재고 차감 없이 종료)
     if (insufficientStockItems.length > 0) {
       const errorMessage = insufficientStockItems.reduce(
         (total, item) => (total += item.message),
@@ -22,7 +21,8 @@ orderController.createOrder = async (req, res) => {
       );
       throw new Error(errorMessage);
     }
-    // order을 만들자!
+
+    // 3. 재고가 충분하면 주문 생성
     const newOrder = new Order({
       userId,
       totalPrice,
@@ -32,13 +32,16 @@ orderController.createOrder = async (req, res) => {
       orderNum: randomStringGenerator(),
     });
 
+    // 4. 재고 차감 실행
+    await productController.updateItemListStock(orderList);
+    
+    // 5. 주문 저장
     await newOrder.save();
 
-    // 주문 후 장바구니 개수 가지고 오기
+    // 주문 후 장바구니 개수 가져오기
     const cart = await Cart.findOne({ userId });
     const remainingCartCount = cart ? cart.items.length : 0;
 
-    console.log(200);
     res.status(200).json({
       status: "success",
       orderNum: newOrder.orderNum,
