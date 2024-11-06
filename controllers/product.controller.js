@@ -38,7 +38,7 @@ productController.createProduct = async (req, res) => {
 productController.getProduct = async (req, res) => {
   try {
     const { page, name } = req.query;
-    const cond = { isDeleted: false }; // 삭제된 상품 제외
+    const cond = { isDeleted: false };
     if (name) cond.name = { $regex: name, $options: "i" };
 
     let query = Product.find(cond).sort({ createdAt: -1 });
@@ -129,32 +129,35 @@ productController.getProductDetail = async (req, res) => {
   }
 };
 
-productController.checkStock = async (item) => {
-  // 내가 사려는 아이템 재고 정보 들어오기
+// 재고 확인만 하는 함수
+productController.verifyStock = async (item) => {
   const product = await Product.findById(item.productId);
-  // 내가 사려는 아이템 qty, 재고 비교
   if (product.stock[item.size] < item.qty) {
-    // 재고가 불충분하면 불충분 메세지와 함께 데이터 반환
     return {
       isVerify: false,
       message: `${product.name}의 ${item.size} 재고가 부족합니다.`,
     };
   }
-  // 충분하다면 재고에서 qty 빼고 성공 결과 보내기
-  const newStock = { ...product.stock };
-  newStock[item.size] -= item.qty;
-  product.stock = newStock;
-
-  await product.save();
   return { isVerify: true };
 };
 
+// 재고 차감만 하는 함수
+productController.updateStock = async (item) => {
+  const product = await Product.findById(item.productId);
+  const newStock = { ...product.stock };
+  newStock[item.size] -= item.qty;
+  product.stock = newStock;
+  await product.save();
+};
+
+// 아이템 리스트의 재고 확인
 productController.checkItemListStock = async (itemList) => {
-  const insufficientStockItems = []; // 재고가 불충분한 아이템을 저장할 예정
-  // 재고 확인 로직
+  const insufficientStockItems = [];
+  
+  // 모든 아이템의 재고를 먼저 확인
   await Promise.all(
     itemList.map(async (item) => {
-      const stockCheck = await productController.checkStock(item);
+      const stockCheck = await productController.verifyStock(item);
       if (!stockCheck.isVerify) {
         insufficientStockItems.push({ item, message: stockCheck.message });
       }
@@ -163,6 +166,16 @@ productController.checkItemListStock = async (itemList) => {
   );
 
   return insufficientStockItems;
+};
+
+// 아이템 리스트의 재고 차감
+productController.updateItemListStock = async (itemList) => {
+  // 모든 아이템의 재고를 차감
+  await Promise.all(
+    itemList.map(async (item) => {
+      await productController.updateStock(item);
+    })
+  );
 };
 
 module.exports = productController;
