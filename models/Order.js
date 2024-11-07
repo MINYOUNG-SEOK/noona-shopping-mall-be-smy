@@ -45,7 +45,7 @@ const orderSchema = Schema(
         },
       },
     ],
-    deliveryMessage: { type: String },
+    deliveryMessage: { type: String, default: "" },
   },
   { timestamps: true }
 );
