@@ -11,7 +11,9 @@ orderController.createOrder = async (req, res) => {
     const { shipTo, contact, totalPrice, orderList } = req.body;
 
     // 1. 먼저 모든 상품의 재고를 확인
-    const insufficientStockItems = await productController.checkItemListStock(orderList);
+    const insufficientStockItems = await productController.checkItemListStock(
+      orderList
+    );
 
     // 2. 재고가 부족한 상품이 있으면 에러 발생 (재고 차감 없이 종료)
     if (insufficientStockItems.length > 0) {
@@ -34,7 +36,7 @@ orderController.createOrder = async (req, res) => {
 
     // 4. 재고 차감 실행
     await productController.updateItemListStock(orderList);
-    
+
     // 5. 주문 저장
     await newOrder.save();
 
@@ -48,6 +50,7 @@ orderController.createOrder = async (req, res) => {
       cartItemCount: remainingCartCount,
     });
   } catch (error) {
+    console.error("주문 생성 중 에러:", error);
     return res.status(400).json({ status: "fail", error: error.message });
   }
 };

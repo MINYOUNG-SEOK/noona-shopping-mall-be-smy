@@ -7,6 +7,7 @@ const Schema = mongoose.Schema;
 const orderSchema = Schema(
   {
     userId: { type: mongoose.ObjectId, ref: "User", required: true },
+    orderNum: { type: String, required: true, unique: true },
     shipTo: {
       address: { type: String, required: true },
       city: { type: String, required: true },
