@@ -5,6 +5,7 @@ const productController = require("./product.controller");
 
 const orderController = {};
 
+// 주문 생성
 orderController.createOrder = async (req, res) => {
   try {
     const { userId } = req;
@@ -55,6 +56,7 @@ orderController.createOrder = async (req, res) => {
   }
 };
 
+// 사용자 주문 목록 조회
 orderController.getMyOrders = async (req, res) => {
   try {
     const { userId } = req;
@@ -72,33 +74,35 @@ orderController.getMyOrders = async (req, res) => {
   }
 };
 
+// 주문 목록 가져오기 (어드민용)
 orderController.getOrderList = async (req, res) => {
   try {
-    const { page = 1, limit = 3, ordernum = "" } = req.query;
+    const { page = 1, limit = 3, orderNum = "" } = req.query;
     const skip = (page - 1) * limit;
 
-    // 검색 조건 설정
+    // 검색 조건 설정 (주문번호 기준 검색)
     const searchCondition = {};
-    if (ordernum) {
-      searchCondition.orderNum = new RegExp(ordernum, "i");
+    if (orderNum) {
+      searchCondition.orderNum = new RegExp(orderNum, "i"); // 대소문자 무시 검색
     }
 
     // 총 주문 수 계산
     const totalOrders = await Order.countDocuments(searchCondition);
-    const totalPageNum = Math.ceil(totalOrders / limit);
+    const totalPageNum = Math.ceil(totalOrders / limit); // 총 페이지 수 계산
 
-    // 주문 목록 조회
+    // 주문 목록 조회 (내림차순 정렬)
     const orders = await Order.find(searchCondition)
-      .populate("userId", "email")
-      .populate("items.productId")
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(Number(limit));
+      .populate("userId", "email") // 사용자 이메일 포함
+      .populate("items.productId", "name") // 아이템 이름 포함
+      .sort({ createdAt: -1 }) // 최신 주문이 상단에 오도록 내림차순 정렬
+      .skip(skip) // 현재 페이지에 맞게 skip 적용
+      .limit(Number(limit)); // 페이지당 limit 적용
 
     res.status(200).json({
       status: "success",
-      orders,
-      totalPageNum,
+      orders, // 주문 목록 데이터
+      totalPageNum, // 총 페이지 수
+      totalOrders, // 총 주문 수
     });
   } catch (error) {
     return res.status(400).json({
@@ -108,6 +112,7 @@ orderController.getOrderList = async (req, res) => {
   }
 };
 
+// 주문 상태 업데이트
 orderController.updateOrderStatus = async (req, res) => {
   try {
     const { id } = req.params;
