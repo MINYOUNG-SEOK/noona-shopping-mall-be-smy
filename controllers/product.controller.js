@@ -81,9 +81,28 @@ productController.updateProduct = async (req, res) => {
       status,
     } = req.body;
 
+    // 재고 상태에 따라 status 자동 설정
+    let updatedStatus = status; // 기본값으로 전달받은 status 사용
+    const hasStock = Object.values(stock).some((qty) => qty > 0);
+    if (hasStock && status === "sold-out") {
+      updatedStatus = "active"; // 재고가 있으면 active로 변경
+    } else if (!hasStock) {
+      updatedStatus = "sold-out"; // 재고가 없으면 sold-out으로 변경
+    }
+
     const product = await Product.findByIdAndUpdate(
       { _id: productId },
-      { sku, name, size, image, price, description, category, stock, status },
+      {
+        sku,
+        name,
+        size,
+        image,
+        price,
+        description,
+        category,
+        stock,
+        status: updatedStatus,
+      },
       { new: true }
     );
 
@@ -132,7 +151,7 @@ productController.getProductDetail = async (req, res) => {
 // 아이템 리스트의 재고 확인
 productController.checkItemListStock = async (itemList) => {
   const insufficientStockItems = [];
-  
+
   // 상품 ID별로 아이템을 그룹화
   const groupedItems = itemList.reduce((acc, item) => {
     if (!acc[item.productId]) {
@@ -146,20 +165,20 @@ productController.checkItemListStock = async (itemList) => {
   for (const [productId, items] of Object.entries(groupedItems)) {
     const product = await Product.findById(productId);
     if (!product) {
-      items.forEach(item => {
+      items.forEach((item) => {
         insufficientStockItems.push({
           item,
-          message: `상품을 찾을 수 없습니다.`
+          message: `상품을 찾을 수 없습니다.`,
         });
       });
       continue;
     }
 
-    items.forEach(item => {
+    items.forEach((item) => {
       if (product.stock[item.size] < item.qty) {
         insufficientStockItems.push({
           item,
-          message: `${product.name}의 ${item.size} 재고가 부족합니다.`
+          message: `${product.name}의 ${item.size} 재고가 부족합니다.`,
         });
       }
     });
@@ -187,11 +206,13 @@ productController.updateItemListStock = async (itemList) => {
     }
 
     const newStock = { ...product.stock };
-    
+
     // 동일 상품의 모든 사이즈 재고를 한 번에 계산
-    items.forEach(item => {
-      if (typeof newStock[item.size] !== 'number') {
-        throw new Error(`상품 ID ${productId}의 ${item.size} 사이즈가 존재하지 않습니다.`);
+    items.forEach((item) => {
+      if (typeof newStock[item.size] !== "number") {
+        throw new Error(
+          `상품 ID ${productId}의 ${item.size} 사이즈가 존재하지 않습니다.`
+        );
       }
       newStock[item.size] -= item.qty;
       if (newStock[item.size] < 0) {
@@ -201,11 +222,11 @@ productController.updateItemListStock = async (itemList) => {
 
     // 재고 업데이트 및 상품 상태 체크
     product.stock = newStock;
-    
+
     // 모든 사이즈의 재고가 0인 경우 상태를 'sold-out'으로 변경
-    const hasSomeStock = Object.values(newStock).some(qty => qty > 0);
+    const hasSomeStock = Object.values(newStock).some((qty) => qty > 0);
     if (!hasSomeStock) {
-      product.status = 'sold-out';
+      product.status = "sold-out";
     }
 
     await product.save();
