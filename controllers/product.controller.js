@@ -129,53 +129,87 @@ productController.getProductDetail = async (req, res) => {
   }
 };
 
-// 재고 확인만 하는 함수
-productController.verifyStock = async (item) => {
-  const product = await Product.findById(item.productId);
-  if (product.stock[item.size] < item.qty) {
-    return {
-      isVerify: false,
-      message: `${product.name}의 ${item.size} 재고가 부족합니다.`,
-    };
-  }
-  return { isVerify: true };
-};
-
-// 재고 차감만 하는 함수
-productController.updateStock = async (item) => {
-  const product = await Product.findById(item.productId);
-  const newStock = { ...product.stock };
-  newStock[item.size] -= item.qty;
-  product.stock = newStock;
-  await product.save();
-};
-
 // 아이템 리스트의 재고 확인
 productController.checkItemListStock = async (itemList) => {
   const insufficientStockItems = [];
   
-  // 모든 아이템의 재고를 먼저 확인
-  await Promise.all(
-    itemList.map(async (item) => {
-      const stockCheck = await productController.verifyStock(item);
-      if (!stockCheck.isVerify) {
-        insufficientStockItems.push({ item, message: stockCheck.message });
+  // 상품 ID별로 아이템을 그룹화
+  const groupedItems = itemList.reduce((acc, item) => {
+    if (!acc[item.productId]) {
+      acc[item.productId] = [];
+    }
+    acc[item.productId].push(item);
+    return acc;
+  }, {});
+
+  // 각 상품별로 재고 확인
+  for (const [productId, items] of Object.entries(groupedItems)) {
+    const product = await Product.findById(productId);
+    if (!product) {
+      items.forEach(item => {
+        insufficientStockItems.push({
+          item,
+          message: `상품을 찾을 수 없습니다.`
+        });
+      });
+      continue;
+    }
+
+    items.forEach(item => {
+      if (product.stock[item.size] < item.qty) {
+        insufficientStockItems.push({
+          item,
+          message: `${product.name}의 ${item.size} 재고가 부족합니다.`
+        });
       }
-      return stockCheck;
-    })
-  );
+    });
+  }
 
   return insufficientStockItems;
 };
 
 // 아이템 리스트의 재고 차감
 productController.updateItemListStock = async (itemList) => {
-  // 모든 아이템의 재고를 차감
-  await Promise.all(
-    itemList.map(async (item) => {
-      await productController.updateStock(item);
-    })
-  );
+  // 상품 ID별로 아이템을 그룹화
+  const groupedItems = itemList.reduce((acc, item) => {
+    if (!acc[item.productId]) {
+      acc[item.productId] = [];
+    }
+    acc[item.productId].push(item);
+    return acc;
+  }, {});
+
+  // 각 상품별로 한 번에 재고 업데이트
+  for (const [productId, items] of Object.entries(groupedItems)) {
+    const product = await Product.findById(productId);
+    if (!product) {
+      throw new Error(`상품 ID ${productId}를 찾을 수 없습니다.`);
+    }
+
+    const newStock = { ...product.stock };
+    
+    // 동일 상품의 모든 사이즈 재고를 한 번에 계산
+    items.forEach(item => {
+      if (typeof newStock[item.size] !== 'number') {
+        throw new Error(`상품 ID ${productId}의 ${item.size} 사이즈가 존재하지 않습니다.`);
+      }
+      newStock[item.size] -= item.qty;
+      if (newStock[item.size] < 0) {
+        throw new Error(`${product.name}의 ${item.size} 재고가 부족합니다.`);
+      }
+    });
+
+    // 재고 업데이트 및 상품 상태 체크
+    product.stock = newStock;
+    
+    // 모든 사이즈의 재고가 0인 경우 상태를 'sold-out'으로 변경
+    const hasSomeStock = Object.values(newStock).some(qty => qty > 0);
+    if (!hasSomeStock) {
+      product.status = 'sold-out';
+    }
+
+    await product.save();
+  }
 };
 
 module.exports = productController;
