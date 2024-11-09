@@ -29,7 +29,6 @@ wishController.getWishList = async (req, res) => {
   }
 };
 
-// 위시리스트 토글 (추가/제거)
 wishController.toggleWish = async (req, res) => {
   try {
     const { productId } = req.params;

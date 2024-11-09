@@ -8,7 +8,7 @@ const app = express();
 require("dotenv").config();
 app.use(cors());
 app.use(bodyParser.urlencoded({ extended: false }));
-app.use(bodyParser.json()); // req.body가 객체로 인식이 된다
+app.use(bodyParser.json());
 
 app.use("/api", indexRouter);
 
@@ -19,6 +19,4 @@ mongoose
   .then(() => console.log("mongoose connected"))
   .catch((err) => console.log("DB connection fail", err));
 
-app.listen(process.env.PORT || 4001, () => {
-  console.log("server on");
-});
+app.listen(process.env.PORT || 4001, () => {});
